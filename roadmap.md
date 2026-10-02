@@ -1,0 +1,3 @@
+- [ ] Make the emotional section and order form banner legible.
+- [ ] Store submitted orders centrally and show them in the owner's dashboard.
+- [ ] Verify mobile/desktop text and the order-to-dashboard flow.

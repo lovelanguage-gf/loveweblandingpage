@@ -1,0 +1,2 @@
+- Store checkout orders in the Cloud `gift_orders` table through a public validated server function; browser-local orders cannot be shared with the owner's dashboard.
+- Restrict order reads and status changes to the authenticated store owner's verified email through RLS and authenticated server functions; client-side password gates cannot secure customer data.
