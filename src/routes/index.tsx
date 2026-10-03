@@ -207,15 +207,23 @@ function Landing() {
           {/* REPLACE IMAGE: feature-mockup-1.png */}
           <img
             src="/uploads/feature-mockup1111.webp"
+            srcSet="/uploads/feature-mockup1111-650.webp 650w, /uploads/feature-mockup1111-1300.webp 1300w"
+            sizes="(max-width: 640px) 100vw, (max-width: 1240px) 50vw, 600px"
             alt="معرض الصور والرسائل داخل موقع الهدية"
             loading="lazy"
+            width={650}
+            height={431}
             className="w-full rounded-3xl shadow-[var(--shadow-soft)]"
           />
           {/* REPLACE IMAGE: feature-mockup-2.png */}
           <img
             src="/uploads/feature-mockup2222.webp"
+            srcSet="/uploads/feature-mockup2222-650.webp 650w, /uploads/feature-mockup2222-1300.webp 1300w"
+            sizes="(max-width: 640px) 100vw, (max-width: 1240px) 50vw, 600px"
             alt="عداد بداية القصة وصندوق المفاجأة داخل الموقع"
             loading="lazy"
+            width={650}
+            height={431}
             className="w-full rounded-3xl shadow-[var(--shadow-soft)]"
           />
         </div>

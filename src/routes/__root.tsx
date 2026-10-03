@@ -80,9 +80,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
-      // Keep the app stylesheet in the server-rendered head; a React onLoad handler
-      // cannot reliably switch media before hydration, which leaves the page unstyled.
-      { rel: "stylesheet", href: appCss },
+      // Preload the hashed Vite stylesheet without blocking first paint. The head
+      // bootstrap below promotes it to a stylesheet after the preload completes.
+      { rel: "preload", as: "style", href: appCss, className: "app-css-preload" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       // The landing page's above-the-fold image is the current LCP candidate.
@@ -119,6 +119,15 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="ar" dir="rtl">
       <head>
         <HeadContent />
+        {/* Critical first-screen styles; the full stylesheet is promoted after preload. */}
+        <style>{`html{font-family:"Cairo","Tajawal",system-ui,sans-serif}body{margin:0;background:#fff;color:#1e1b33}.relative{position:relative}.mx-auto{margin-inline:auto}.flex{display:flex}.grid{display:grid}.w-full{width:100%}.items-center{align-items:center}.justify-between{justify-content:space-between}.px-5{padding-inline:1.25rem}.py-5{padding-block:1.25rem}.pt-6{padding-top:1.5rem}.pb-16{padding-bottom:4rem}.text-center{text-align:center}.text-ink{color:#1e1b33}.font-extrabold{font-weight:800}.text-3xl{font-size:1.875rem;line-height:1.35}.relative.mx-auto.grid .reveal{opacity:1;transform:none}@media(min-width:768px){.md\\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\\:text-start{text-align:start}}`}</style>
+        {/* A real head script handles the preload event before hydration; noscript is the fallback. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(()=>{const l=document.querySelector('link.app-css-preload');if(!l)return;const apply=()=>{l.onload=null;l.rel='stylesheet'};l.onload=apply;if(l.sheet)apply()})();`,
+          }}
+        />
+        <noscript><link rel="stylesheet" href={appCss} /></noscript>
         {metaPixelBootstrap && <script dangerouslySetInnerHTML={{ __html: metaPixelBootstrap }} />}
         {gaSnippet && <script dangerouslySetInnerHTML={{ __html: gaSnippet }} />}
         {shouldLoadGa && (
