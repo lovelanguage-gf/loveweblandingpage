@@ -168,7 +168,8 @@ function Landing() {
             <img
               src="/uploads/product-mockup.webp"
               alt="معاينة موقع الهدية المخصص على شاشة الموبايل"
-              loading="lazy"
+              loading="eager"
+              fetchPriority="high"
               width={300}
               height={350}
               className="h-auto w-[260px] rounded-[2rem] sm:w-[300px]"

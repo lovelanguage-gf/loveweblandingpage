@@ -80,9 +80,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
-      { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      // The landing page's above-the-fold image is the current LCP candidate.
+      { rel: "preload", as: "image", href: "/uploads/product-mockup.webp", fetchPriority: "high" },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;700;800&display=swap",
@@ -105,26 +106,33 @@ function RootShell({ children }: { children: ReactNode }) {
   const shouldLoadMetaPixel = !!metaPixelId && /^\d+$/.test(metaPixelId) && !isAdmin;
   const shouldLoadGa = !!gaMeasurementId && /^G-[A-Z\d]+$/i.test(gaMeasurementId) && !isAdmin;
   const shouldLoadClarity = !!clarityProjectId && /^[a-z\d]+$/i.test(clarityProjectId) && !isAdmin;
-  const metaPixelSnippet = shouldLoadMetaPixel
-    ? `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");fbq("init",${JSON.stringify(metaPixelId)});`
+  const metaPixelBootstrap = shouldLoadMetaPixel
+    ? `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!1;n.version="2.0";n.queue=[];n.load=function(){if(n.loaded)return;n.loaded=!0;t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}}(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");fbq("init",${JSON.stringify(metaPixelId)});`
     : undefined;
   const gaSnippet = shouldLoadGa
     ? `window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag("js",new Date());window.gtag("config",${JSON.stringify(gaMeasurementId)},{send_page_view:false});`
     : undefined;
-  const claritySnippet = shouldLoadClarity
-    ? `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script",${JSON.stringify(clarityProjectId)});`
-    : undefined;
-
   return (
     <html lang="ar" dir="rtl">
       <head>
         <HeadContent />
-        {metaPixelSnippet && <script dangerouslySetInnerHTML={{ __html: metaPixelSnippet }} />}
+        {/* Critical first-screen defaults let the hero render before the full Tailwind bundle arrives. */}
+        <style>{`html{font-family:"Cairo","Tajawal",system-ui,sans-serif}body{margin:0;background:#fff;color:#1e1b33}.relative{position:relative}.mx-auto{margin-inline:auto}.flex{display:flex}.grid{display:grid}.w-full{width:100%}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-10{gap:2.5rem}.px-5{padding-inline:1.25rem}.py-5{padding-block:1.25rem}.pb-16{padding-bottom:4rem}.pt-6{padding-top:1.5rem}.text-center{text-align:center}.text-ink{color:#1e1b33}.font-extrabold{font-weight:800}.text-3xl{font-size:1.875rem;line-height:1.35}.relative.mx-auto.grid .reveal{opacity:1;transform:none}@media(min-width:768px){.md\\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.md\\:text-start{text-align:start}}`}</style>
+        {/* Load the generated application CSS without blocking first paint. */}
+        <link rel="stylesheet" href={appCss} media="print" onLoad={(event) => { event.currentTarget.media = "all"; }} />
+        {metaPixelBootstrap && <script dangerouslySetInnerHTML={{ __html: metaPixelBootstrap }} />}
         {gaSnippet && <script dangerouslySetInnerHTML={{ __html: gaSnippet }} />}
         {shouldLoadGa && (
           <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`} />
         )}
-        {claritySnippet && <script dangerouslySetInnerHTML={{ __html: claritySnippet }} />}
+        {/* Third-party analytics are injected only after the first meaningful user interaction. */}
+        {(shouldLoadMetaPixel || shouldLoadClarity) && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `${shouldLoadClarity ? `window.clarity=window.clarity||function(){(window.clarity.q=window.clarity.q||[]).push(arguments)};` : ""}(()=>{let loaded=false;const load=()=>{if(loaded)return;loaded=true;${shouldLoadMetaPixel ? "window.fbq&&window.fbq.load();" : ""}${shouldLoadClarity ? `const s=document.createElement('script');s.async=true;s.src='https://www.clarity.ms/tag/'+${JSON.stringify(clarityProjectId)};document.head.appendChild(s);` : ""}for(const e of ['scroll','mousemove','touchstart','keydown','pointerdown'])window.removeEventListener(e,load)};for(const e of ['scroll','mousemove','touchstart','keydown','pointerdown'])window.addEventListener(e,load,{once:true,passive:true})})();`,
+            }}
+          />
+        )}
       </head>
       <body>
         {children}
