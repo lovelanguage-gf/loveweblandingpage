@@ -404,6 +404,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                               <img
                                 src={o.receipt}
                                 alt={`إيصال الطلب ${o.orderId}`}
+                                width={48}
+                                height={48}
                                 className="h-12 w-12 rounded-lg object-cover"
                               />
                             </button>
@@ -455,6 +457,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                           <img
                             src={o.receipt}
                             alt={`إيصال الطلب ${o.orderId}`}
+                            width={48}
+                            height={48}
                             className="h-12 w-12 rounded-lg object-cover"
                           />
                         </button>
@@ -491,6 +495,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             <img
               src={lightbox}
               alt="إيصال التحويل"
+              width={650}
+              height={430}
               className="max-h-[75vh] w-full rounded-2xl object-contain"
             />
             <div className="mt-3 flex justify-between">

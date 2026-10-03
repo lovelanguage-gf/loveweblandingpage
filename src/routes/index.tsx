@@ -207,8 +207,6 @@ function Landing() {
           {/* REPLACE IMAGE: feature-mockup-1.png */}
           <img
             src="/uploads/feature-mockup1111.webp"
-            srcSet="/uploads/feature-mockup1111-650.webp 650w, /uploads/feature-mockup1111-1300.webp 1300w"
-            sizes="(max-width: 640px) 100vw, (max-width: 1240px) 50vw, 600px"
             alt="معرض الصور والرسائل داخل موقع الهدية"
             loading="lazy"
             width={650}
@@ -218,8 +216,6 @@ function Landing() {
           {/* REPLACE IMAGE: feature-mockup-2.png */}
           <img
             src="/uploads/feature-mockup2222.webp"
-            srcSet="/uploads/feature-mockup2222-650.webp 650w, /uploads/feature-mockup2222-1300.webp 1300w"
-            sizes="(max-width: 640px) 100vw, (max-width: 1240px) 50vw, 600px"
             alt="عداد بداية القصة وصندوق المفاجأة داخل الموقع"
             loading="lazy"
             width={650}
@@ -266,6 +262,8 @@ function Landing() {
             src="/uploads/dashboard-mockup.webp"
             alt="لوحة التحكم الخاصة بالعميل لإضافة الصور والرسائل"
             loading="lazy"
+            width={650}
+            height={430}
             className="w-full rounded-2xl shadow-[var(--shadow-soft)]"
           />
         </div>
@@ -511,6 +509,8 @@ function OrderForm({
               <img
                 src="/uploads/Instapay.webp"
                 alt="InstaPay"
+                width={28}
+                height={28}
                 className="h-7 w-7 rounded-md object-contain"
               />
               <span>إنستاباي (InstaPay)</span>
@@ -519,6 +519,8 @@ function OrderForm({
               <img
                 src="/uploads/vodafone-cash.png"
                 alt="Vodafone Cash"
+                width={28}
+                height={28}
                 className="h-7 w-7 rounded-md object-contain"
               />
               <span>فودافون كاش (Vodafone Cash)</span>
@@ -569,6 +571,8 @@ function OrderForm({
               <img
                 src={preview}
                 alt="معاينة إيصال التحويل"
+                width={80}
+                height={80}
                 className="h-20 w-20 rounded-xl object-cover"
               />
               <div className="min-w-0 flex-1">

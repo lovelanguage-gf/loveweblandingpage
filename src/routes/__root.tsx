@@ -130,14 +130,11 @@ function RootShell({ children }: { children: ReactNode }) {
         <noscript><link rel="stylesheet" href={appCss} /></noscript>
         {metaPixelBootstrap && <script dangerouslySetInnerHTML={{ __html: metaPixelBootstrap }} />}
         {gaSnippet && <script dangerouslySetInnerHTML={{ __html: gaSnippet }} />}
-        {shouldLoadGa && (
-          <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`} />
-        )}
-        {/* Third-party analytics are injected only after the first meaningful user interaction. */}
-        {(shouldLoadMetaPixel || shouldLoadClarity) && (
+        {/* Third-party downloads wait for interaction or a 3-second fallback. */}
+        {(shouldLoadMetaPixel || shouldLoadGa || shouldLoadClarity) && (
           <script
             dangerouslySetInnerHTML={{
-              __html: `${shouldLoadClarity ? `window.clarity=window.clarity||function(){(window.clarity.q=window.clarity.q||[]).push(arguments)};` : ""}(()=>{let loaded=false;const load=()=>{if(loaded)return;loaded=true;${shouldLoadMetaPixel ? "window.fbq&&window.fbq.load();" : ""}${shouldLoadClarity ? `const s=document.createElement('script');s.async=true;s.src='https://www.clarity.ms/tag/'+${JSON.stringify(clarityProjectId)};document.head.appendChild(s);` : ""}for(const e of ['scroll','mousemove','touchstart','keydown','pointerdown'])window.removeEventListener(e,load)};for(const e of ['scroll','mousemove','touchstart','keydown','pointerdown'])window.addEventListener(e,load,{once:true,passive:true})})();`,
+              __html: `${shouldLoadClarity ? `window.clarity=window.clarity||function(){(window.clarity.q=window.clarity.q||[]).push(arguments)};` : ""}(()=>{let loaded=false;let timer;const load=()=>{if(loaded)return;loaded=true;clearTimeout(timer);${shouldLoadMetaPixel ? "window.fbq&&window.fbq.load();" : ""}${shouldLoadGa ? `const g=document.createElement('script');g.async=true;g.src='https://www.googletagmanager.com/gtag/js?id='+${JSON.stringify(gaMeasurementId)};document.head.appendChild(g);` : ""}${shouldLoadClarity ? `const s=document.createElement('script');s.async=true;s.src='https://www.clarity.ms/tag/'+${JSON.stringify(clarityProjectId)};document.head.appendChild(s);` : ""}for(const e of ['mouseover','scroll','touchstart','keydown','pointerdown'])window.removeEventListener(e,load)};for(const e of ['mouseover','scroll','touchstart','keydown','pointerdown'])window.addEventListener(e,load,{once:true,passive:true});timer=setTimeout(load,3000)})();`,
             }}
           />
         )}
