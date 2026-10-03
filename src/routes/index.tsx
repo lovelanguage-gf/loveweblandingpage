@@ -5,6 +5,7 @@ import { compressImage, generateOrderId, type Order } from "@/lib/orders";
 import { submitOrder } from "@/lib/orders.functions";
 import { useReveal } from "@/hooks/use-reveal";
 import { trackInitiateCheckout, trackPurchase } from "@/lib/tracking";
+import { ShieldCheck, ShoppingBag } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -67,6 +68,60 @@ const REVIEWS = [
   ],
 ] as const;
 
+// Rotating product facts provide a helpful prompt without inventing customer purchases.
+const TRUST_NOTICES = [
+  "صمّموا هدية رقمية تجمع صوركم ورسائلكم وذكرياتكم في مكان واحد.",
+  "بعد تأكيد الطلب، يصلكم رابط موقعكم ولوحة التحكم على واتساب.",
+  "تقدروا تضيفوا الصور والرسائل والتواريخ والأغنية من لوحة التحكم.",
+] as const;
+
+function TrustNoticeToast() {
+  const [notice, setNotice] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    let hideTimer: ReturnType<typeof setTimeout>;
+    let repeatTimer: ReturnType<typeof setTimeout>;
+    const showNextNotice = () => {
+      const next = TRUST_NOTICES[Math.floor(Math.random() * TRUST_NOTICES.length)];
+      setNotice(next);
+      setVisible(true);
+      const nextDelay = 12_000 + Math.random() * 8_000;
+      repeatTimer = setTimeout(showNextNotice, nextDelay);
+      hideTimer = setTimeout(() => {
+        setVisible(false);
+        hideTimer = setTimeout(() => setNotice(null), 500);
+      }, 4_000);
+    };
+
+    const firstTimer = setTimeout(showNextNotice, 5_000);
+    return () => {
+      clearTimeout(firstTimer);
+      clearTimeout(hideTimer);
+      clearTimeout(repeatTimer);
+    };
+  }, []);
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      aria-hidden={!notice}
+      dir="rtl"
+      className="pointer-events-none fixed inset-x-4 top-4 z-[1200] mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-brand-purple/25 bg-white/95 px-4 py-3 text-sm font-semibold text-ink shadow-[var(--shadow-lift)] backdrop-blur transition-all duration-500 ease-out motion-reduce:transition-none"
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(calc(-100% - 1rem))",
+      }}
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-teal/15 text-brand-deep">
+        <ShoppingBag aria-hidden="true" size={20} />
+      </span>
+      <span>{notice}</span>
+    </div>
+  );
+}
+
 function LiveDemoPrompt({ className = "" }: { className?: string }) {
   return (
     <p
@@ -74,7 +129,7 @@ function LiveDemoPrompt({ className = "" }: { className?: string }) {
     >
       <span>✨ عايز تعيش التجربة؟</span>
       <a
-        href="https://love-oyjn.onrender.com/gift/ahmed"
+        href="https://love-amber-chi.vercel.app/gift/ahmed"
         target="_blank"
         rel="noopener noreferrer"
         className="font-extrabold text-brand-blue underline decoration-brand-blue/40 underline-offset-4 transition-colors hover:text-brand-deep"
@@ -131,6 +186,7 @@ function Landing() {
 
   return (
     <div className="relative pb-28">
+      <TrustNoticeToast />
       {/* ---------- Header ---------- */}
       <header className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-5 py-5">
         <span className="text-xl font-extrabold text-ink">{BRAND}</span>
@@ -606,6 +662,14 @@ function OrderForm({
             {formError}
           </p>
         )}
+
+        <div className="flex items-start gap-3 rounded-2xl border border-brand-teal/40 bg-brand-teal/5 p-4 text-sm leading-7 text-ink">
+          <ShieldCheck aria-hidden="true" className="mt-1 shrink-0 text-emerald-600" size={23} />
+          <p>
+            <span className="font-extrabold">ضمان استرداد الأموال 100% 🛡️</span> - إذا واجهت أي
+            مشكلة أو لم يعجبك المنتج، نضمن لك استرجاع أموالك بالكامل بدون أي تعقيدات.
+          </p>
+        </div>
 
         <button type="submit" disabled={submitting} className="btn-primary w-full">
           {submitting ? "جاري الإرسال..." : "تأكيد الطلب 🎁"}
