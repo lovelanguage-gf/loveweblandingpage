@@ -1,11 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { CONFIG, BRAND } from "@/lib/config";
-import { compressImage, generateOrderId, type Order } from "@/lib/orders";
-import { submitOrder } from "@/lib/orders.functions";
+import { generateOrderId } from "@/lib/orders";
+import { saveOrderDraft, submitOrder } from "@/lib/orders.functions";
 import { useReveal } from "@/hooks/use-reveal";
-import { trackInitiateCheckout, trackPurchase } from "@/lib/tracking";
-import { ShieldCheck, ShoppingBag } from "lucide-react";
+import { trackInitiateCheckout } from "@/lib/tracking";
+import { ShieldCheck, ShoppingBag, MessageCircle } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -44,8 +44,8 @@ const FEATURES = [
 ] as const;
 
 const STEPS = [
-  ["املا بياناتك", "اكتب اسمك واسم الشخص اللي هتهديله، ورقم الواتساب بتاعك."],
-  ["حوّل 250 جنيه", "حوّل المبلغ بإنستاباي أو فودافون كاش، وصوّر إيصال التحويل."],
+  ["املأ بياناتك وبيانات حبيبك", "اكتب اسمك واسم الشخص اللي هتهديله، ورقم الواتساب بتاعك."],
+  ["أكد طلبك على الواتساب", "سيتم تحويلك للواتساب لتأكيد الطلب وإتمام الدفع."],
   ["استلم موقعكم على الواتساب", "بعد مراجعة الإيصال بنبعتلك لينك موقعكم ولوحة التحكم الخاصة بيك."],
   [
     "أضف لمستك واهدي",
@@ -163,7 +163,6 @@ function FloatingHearts() {
 
 function Landing() {
   useReveal();
-  const navigate = useNavigate();
   const [toast, setToast] = useState<string | null>(null);
   const [hideSticky, setHideSticky] = useState(false);
   const formSectionRef = useRef<HTMLElement | null>(null);
@@ -211,7 +210,7 @@ function Landing() {
           </p>
           <LiveDemoPrompt className="mt-4" />
           <button onClick={scrollToForm} className="btn-primary glow-cta mt-7 w-full sm:w-auto">
-            اطلب هديتك دلوقتي – 250 جنيه بس
+            اطلب هديتك دلوقتي – <del className="mx-1 opacity-70">599ج</del> 250ج
           </button>
           <p className="mt-4 text-sm font-semibold text-ink/70">
             ✅ بتستلم لينك موقعكم + لوحة تحكم خاصة بيك على الواتساب
@@ -383,20 +382,13 @@ function Landing() {
             جاهز تفرّح حبيبك؟ املا بياناتك دلوقتي 🎁
           </h2>
           <p className="mt-3 text-ink/70">
-            خطوة واحدة بس وتبدأ رحلة هديتك. السعر 250 جنيه مصري بس.
+            خطوة واحدة بس وتبدأ رحلة هديتك. السعر <del className="mx-1">599ج</del> 250ج بس.
           </p>
         </div>
         <div className="reveal mt-5 text-center">
           <LiveDemoPrompt />
         </div>
-        <OrderForm
-          onToast={showToast}
-          onSuccess={(order) => {
-            sessionStorage.setItem("orderCompleted", "1");
-            sessionStorage.setItem("lastOrderId", order.orderId);
-            navigate({ to: "/thank-you" });
-          }}
-        />
+        <OrderForm />
       </section>
 
       {/* ---------- FOOTER ---------- */}
@@ -417,11 +409,10 @@ function Landing() {
       >
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3 border-t border-white/40 bg-white/85 px-4 py-3 backdrop-blur-lg sm:m-3 sm:rounded-full sm:border sm:shadow-[var(--shadow-soft)]">
           <span className="text-sm font-extrabold text-ink sm:text-base">
-            هديتك بـ 250 جنيه بس ❤️
+            هديتك بـ <del className="mx-1 opacity-70">599ج</del> 250ج بس ❤️
           </span>
           <button
             onClick={() => {
-              trackInitiateCheckout();
               scrollToForm();
             }}
             className="btn-primary !min-h-[48px] !px-6 text-sm"
@@ -443,240 +434,62 @@ function Landing() {
 // =====================================================================
 // Order form
 // =====================================================================
-type FormErrors = {
-  name?: string;
-  partnerName?: string;
-  whatsapp?: string;
-  receipt?: string;
-};
-
-function OrderForm({
-  onSuccess,
-  onToast,
-}: {
-  onSuccess: (order: Order) => void;
-  onToast: (m: string) => void;
-}) {
-  const [values, setValues] = useState({ name: "", partnerName: "", whatsapp: "" });
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+type FormErrors = { name?: string; partnerName?: string; whatsapp?: string };
+type FormValues = { name: string; partnerName: string; whatsapp: string };
+function OrderForm() {
+  const [values, setValues] = useState<FormValues>({ name: "", partnerName: "", whatsapp: "" });
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-
+  const orderIdRef = useRef(generateOrderId());
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!Object.values(values).some((value) => value.trim().length > 0)) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => { void saveOrderDraft({ data: { orderId: orderIdRef.current, ...values } }).catch(() => {}); }, 700);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [values]);
   function validate() {
-    const e: FormErrors = {};
-    if (!values.name.trim()) e["name"] = "من فضلك اكتب اسمك";
-    if (!values.partnerName.trim()) e["partnerName"] = "من فضلك اكتب اسم الشخص اللي هتهديله";
-    if (!/^01[0125][0-9]{8}$/.test(values.whatsapp.trim()))
-      e["whatsapp"] = "اكتب رقم واتساب مصري صحيح زي 01XXXXXXXXX";
-    if (!file) e["receipt"] = "لازم ترفع صورة إيصال التحويل";
-    else if (!file.type.startsWith("image/")) e["receipt"] = "الملف لازم يكون صورة";
-    else if (file.size > 5 * 1024 * 1024) e["receipt"] = "حجم الصورة لازم يكون أقل من 5 ميجا";
-    setErrors(e);
-    return Object.keys(e).length === 0;
+    const next: FormErrors = {};
+    if (!values.name.trim()) next.name = "من فضلك اكتب اسمك";
+    if (!values.partnerName.trim()) next.partnerName = "من فضلك اكتب اسم الشخص اللي هتهديله";
+    if (!/^01[0125][0-9]{8}$/.test(values.whatsapp.trim())) next.whatsapp = "اكتب رقم واتساب مصري صحيح زي 01XXXXXXXXX";
+    setErrors(next); return Object.keys(next).length === 0;
   }
-
-  function onPickFile(f: File | null) {
-    setFile(f);
-    setPreview(f ? URL.createObjectURL(f) : null);
-  }
-
   async function handleSubmit(ev: React.FormEvent) {
-    ev.preventDefault();
-    setFormError(null);
-    if (!validate()) return;
-    setSubmitting(true);
-
-    const order: Order = {
-      orderId: generateOrderId(),
-      createdAt: new Date().toISOString(),
-      name: values.name.trim(),
-      partnerName: values.partnerName.trim(),
-      whatsapp: values.whatsapp.trim(),
-      amount: CONFIG.PRICE_EGP,
-      status: "pending",
-    };
-
+    ev.preventDefault(); setFormError(null); if (!validate()) return; setSubmitting(true);
     try {
-      if (!file) return;
-      const receipt = await compressImage(file);
-      await submitOrder({
-        data: {
-          orderId: order.orderId,
-          name: order.name,
-          partnerName: order.partnerName,
-          whatsapp: order.whatsapp,
-          receipt,
-        },
-      });
-      trackPurchase(CONFIG.PRICE_EGP, CONFIG.CURRENCY);
-      onSuccess(order);
-    } catch {
-      setFormError("حصلت مشكلة، جرب تاني من فضلك 🙏");
-    } finally {
-      setSubmitting(false);
-    }
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      const clean = { name: values.name.trim(), partnerName: values.partnerName.trim(), whatsapp: values.whatsapp.trim() };
+      await submitOrder({ data: { orderId: orderIdRef.current, ...clean } });
+      trackInitiateCheckout();
+      const message = "أهلاً، أنا " + clean.name + " وعايز أأكد طلب الهدية لـ " + clean.partnerName;
+      window.location.assign("https://wa.me/201558856357?text=" + encodeURIComponent(message));
+    } catch { setFormError("حصلت مشكلة في حفظ الطلب، جرب تاني من فضلك 🙏"); } finally { setSubmitting(false); }
   }
-
+  const update = (key: keyof FormValues, value: string) => {
+    setValues((current) => ({ ...current, [key]: value })); setErrors((current) => ({ ...current, [key]: undefined }));
+  };
   return (
-    <form
-      onSubmit={handleSubmit}
-      onFocus={trackInitiateCheckout}
-      noValidate
-      className="reveal surface-card mt-8 overflow-hidden"
-    >
-      <div className="bg-brand-blue px-5 py-3 text-center text-sm font-extrabold text-white">
-        🎁 موقع هدية مخصوص | 💰 250 جنيه
-      </div>
-
+    <form onSubmit={handleSubmit} noValidate className="reveal surface-card mt-8 overflow-hidden">
+      <div className="bg-brand-blue px-5 py-3 text-center text-sm font-extrabold text-white">🎁 موقع هدية مخصوص | <del className="mx-1 opacity-70">599ج</del> 250ج</div>
       <div className="space-y-5 p-5 sm:p-7">
-        <Field
-          id="name"
-          label="اسمك"
-          placeholder="اكتب اسمك هنا"
-          value={values.name}
-          error={errors["name"]}
-          onChange={(v) => setValues({ ...values, name: v })}
-        />
-        <Field
-          id="partnerName"
-          label="اسم الشخص اللي هتهديله"
-          placeholder="اسم حبيبك / حبيبتك"
-          value={values.partnerName}
-          error={errors["partnerName"]}
-          onChange={(v) => setValues({ ...values, partnerName: v })}
-        />
-        <Field
-          id="whatsapp"
-          type="tel"
-          label="رقم الواتساب بتاعك"
-          placeholder="01XXXXXXXXX"
-          helper="هنبعتلك عليه لينك موقعكم ولوحة التحكم"
-          value={values.whatsapp}
-          error={errors["whatsapp"]}
-          onChange={(v) => setValues({ ...values, whatsapp: v })}
-        />
-
-        {/* Payment instructions */}
-        <div className="rounded-2xl border-2 border-brand-teal/60 bg-brand-teal/5 p-5">
-          <h3 className="text-base font-extrabold text-ink">💳 تعليمات الدفع</h3>
-          <p className="mt-2 text-sm leading-7 text-ink/75">حوّل مبلغ 250 جنيه مصري باستخدام:</p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-bold text-ink">
-            <span className="inline-flex items-center gap-2">
-              <img
-                src="/uploads/Instapay.webp"
-                alt="InstaPay"
-                width={28}
-                height={28}
-                className="h-7 w-7 rounded-md object-contain"
-              />
-              <span>إنستاباي (InstaPay)</span>
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <img
-                src="/uploads/vodafone-cash.png"
-                alt="Vodafone Cash"
-                width={28}
-                height={28}
-                className="h-7 w-7 rounded-md object-contain"
-              />
-              <span>فودافون كاش (Vodafone Cash)</span>
-            </span>
-          </div>
-          <p className="mt-2 text-sm leading-7 text-ink/75">على الرقم التالي:</p>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <span className="rounded-xl bg-white px-4 py-2 font-mono text-lg font-extrabold tracking-wider text-brand-blue">
-              {CONFIG.PAYMENT_NUMBER}
-            </span>
-            <button
-              type="button"
-              className="btn-teal !min-h-[44px] text-sm"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(CONFIG.PAYMENT_NUMBER);
-                  onToast("تم النسخ ✅");
-                } catch {
-                  onToast("تم النسخ ✅");
-                }
-              }}
-            >
-              نسخ الرقم
-            </button>
-          </div>
-          <p className="mt-3 text-xs leading-6 text-ink/70">
-            بعد التحويل، صوّر إيصال العملية وارفعه في الخانة اللي تحت عشان نأكد طلبك.
-          </p>
-        </div>
-
-        {/* Receipt upload */}
-        <div>
-          <label htmlFor="receipt" className="mb-2 block text-sm font-extrabold text-ink">
-            ارفع صورة إيصال التحويل
-          </label>
-          {!preview ? (
-            <label
-              htmlFor="receipt"
-              className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand-purple/60 bg-white/70 p-7 text-center transition-colors hover:border-brand-blue"
-            >
-              <span className="text-3xl">⬆️</span>
-              <span className="text-sm font-bold text-ink/75">
-                اضغط هنا لرفع صورة الإيصال (Screenshot)
-              </span>
-            </label>
-          ) : (
-            <div className="flex items-center gap-4 rounded-2xl border border-brand-purple/40 bg-white p-3">
-              <img
-                src={preview}
-                alt="معاينة إيصال التحويل"
-                width={80}
-                height={80}
-                className="h-20 w-20 rounded-xl object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-ink">{file?.name}</p>
-                <button
-                  type="button"
-                  onClick={() => onPickFile(null)}
-                  className="mt-1 text-sm font-bold text-brand-blue underline"
-                >
-                  تغيير / إزالة
-                </button>
-              </div>
-            </div>
-          )}
-          <input
-            id="receipt"
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            onChange={(e) => onPickFile(e.target.files?.[0] ?? null)}
-          />
-          {errors["receipt"] && (
-            <p className="mt-2 text-sm font-bold text-red-600">{errors["receipt"]}</p>
-          )}
-        </div>
-
-        {formError && (
-          <p className="rounded-xl bg-red-50 p-3 text-center text-sm font-bold text-red-600">
-            {formError}
-          </p>
-        )}
-
-        <div className="flex items-start gap-3 rounded-2xl border border-brand-teal/40 bg-brand-teal/5 p-4 text-sm leading-7 text-ink">
-          <ShieldCheck aria-hidden="true" className="mt-1 shrink-0 text-emerald-600" size={23} />
-          <p>
-            <span className="font-extrabold">ضمان استرداد الأموال 100% 🛡️</span> - إذا واجهت أي
-            مشكلة أو لم يعجبك المنتج، نضمن لك استرجاع أموالك بالكامل بدون أي تعقيدات.
-          </p>
-        </div>
-
-        <button type="submit" disabled={submitting} className="btn-primary w-full">
-          {submitting ? "جاري الإرسال..." : "تأكيد الطلب 🎁"}
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-center font-extrabold text-amber-900">خصم لفترة محدودة: 250ج بدلاً من 599ج</div>
+        <p className="text-center text-sm font-extrabold text-brand-deep">التسليم لحظي علطول أول لما يتم الدفع</p>
+        <Field id="name" label="اسمك" placeholder="اكتب اسمك هنا" value={values.name} error={errors.name} onChange={(v) => update("name", v)} />
+        <Field id="partnerName" label="اسم الشخص اللي هتهديله" placeholder="اسم حبيبك / حبيبتك" value={values.partnerName} error={errors.partnerName} onChange={(v) => update("partnerName", v)} />
+        <Field id="whatsapp" type="tel" label="رقم الواتساب بتاعك" placeholder="01XXXXXXXXX" helper="هنبعتلك عليه لينك موقعكم ولوحة التحكم" value={values.whatsapp} error={errors.whatsapp} onChange={(v) => update("whatsapp", v)} />
+        <div className="flex items-start gap-3 rounded-2xl border border-brand-teal/40 bg-brand-teal/5 p-4 text-sm leading-7 text-ink"><ShieldCheck aria-hidden="true" className="mt-1 shrink-0 text-emerald-600" size={23} /><p><span className="font-extrabold">ضمان استرداد الأموال 100% 🛡️</span> - إذا واجهت أي مشكلة أو لم يعجبك المنتج، نضمن لك استرجاع أموالك بالكامل بدون أي تعقيدات.</p></div>
+        {formError && <p className="rounded-xl bg-red-50 p-3 text-center text-sm font-bold text-red-600">{formError}</p>}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3 font-extrabold text-white shadow-md transition-colors hover:bg-[#1fba59] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          <MessageCircle aria-hidden="true" size={21} fill="currentColor" strokeWidth={1.5} />
+          {submitting ? "جاري تجهيز واتساب..." : "تأكيد الطلب على الواتساب"}
         </button>
-        <p className="text-center text-xs text-ink/65">
-          🔒 بياناتك في أمان وبتتستخدم بس لتجهيز هديتك.
-        </p>
+        <p className="text-center text-xs text-ink/65">🔒 بياناتك في أمان وبتتستخدم بس لتجهيز هديتك.</p>
       </div>
     </form>
   );

@@ -24,6 +24,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 const STATUS_META: Record<OrderStatus, { label: string; bg: string; color: string }> = {
+  incomplete: { label: "غير مكتمل", bg: "rgb(239 68 68 / 0.12)", color: "#B91C1C" },
   pending: { label: "قيد المراجعة / Pending", bg: "rgb(245 158 11 / 0.15)", color: "#B45309" },
   completed: { label: "تم التأكيد / Completed", bg: "rgb(0 201 167 / 0.18)", color: "#047a66" },
   delivered: { label: "تم التسليم / Delivered", bg: "rgb(26 104 217 / 0.14)", color: "#1A68D9" },
@@ -162,7 +163,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return orders
+    return orders.filter((o) => o.status !== "incomplete")
       .filter((o) => (statusFilter === "all" ? true : o.status === statusFilter))
       .filter((o) =>
         !q
@@ -310,6 +311,21 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             <p className="py-10 text-center text-sm font-bold text-slate-500">لسه مفيش طلبات</p>
           ) : (
             <BarChart data={chartData} />
+          )}
+        </section>
+
+        <section className="rounded-2xl bg-white p-5 shadow-sm">
+          <h2 className="font-extrabold text-ink">الطلبات الغير مكتملة</h2>
+          <p className="mt-1 text-sm text-slate-500">بيانات العملاء الذين بدأوا إدخال بياناتهم ولم يؤكدوا الطلب بعد.</p>
+          {orders.filter((o) => o.status === "incomplete").length === 0 ? (
+            <p className="py-6 text-center text-sm text-slate-500">لا توجد مسودات حالياً</p>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[650px] text-start text-sm">
+                <thead className="text-xs text-slate-500"><tr className="border-b"><th className="p-3 text-start">التاريخ</th><th className="p-3 text-start">اسم العميل</th><th className="p-3 text-start">اسم المستلم</th><th className="p-3 text-start">واتساب</th></tr></thead>
+                <tbody>{orders.filter((o) => o.status === "incomplete").map((o) => <tr key={o.orderId} className="border-b border-slate-100"><td className="p-3">{fmtDate(o.createdAt)}</td><td className="p-3">{o.name || "—"}</td><td className="p-3">{o.partnerName || "—"}</td><td className="p-3"><a className="font-bold text-brand-teal" href={waLink(o.whatsapp)} target="_blank" rel="noreferrer">{o.whatsapp || "واتساب"}</a></td></tr>)}</tbody>
+              </table>
+            </div>
           )}
         </section>
 
