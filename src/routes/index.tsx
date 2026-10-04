@@ -129,7 +129,7 @@ function LiveDemoPrompt({ className = "" }: { className?: string }) {
     >
       <span>✨ عايز تعيش التجربة؟</span>
       <a
-        href="https://love-amber-chi.vercel.app/gift/ahmed"
+        href="https://love2-eight-eta.vercel.app/gift/ahmed"
         target="_blank"
         rel="noopener noreferrer"
         className="font-extrabold text-brand-blue underline decoration-brand-blue/40 underline-offset-4 transition-colors hover:text-brand-deep"
