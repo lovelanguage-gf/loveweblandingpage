@@ -52,18 +52,3 @@ export function trackInitiateCheckout() {
     // Tracking must never interrupt the checkout flow.
   }
 }
-
-export function trackPurchase(value: number, currency: string) {
-  if (isAdminPath()) return;
-  const params: TrackingParams = { value, currency };
-  try {
-    if (metaPixelId) window.fbq?.("track", "Purchase", params);
-  } catch {
-    // Tracking must never interrupt the checkout flow.
-  }
-  try {
-    if (gaMeasurementId) window.gtag?.("event", "purchase", params);
-  } catch {
-    // Tracking must never interrupt the checkout flow.
-  }
-}
