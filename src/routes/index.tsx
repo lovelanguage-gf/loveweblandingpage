@@ -122,25 +122,6 @@ function TrustNoticeToast() {
   );
 }
 
-function LiveDemoPrompt({ className = "" }: { className?: string }) {
-  return (
-    <p
-      className={`inline-flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 rounded-full border border-brand-purple/35 bg-white/75 px-4 py-2 text-sm font-semibold text-brand-deep shadow-sm ${className}`}
-    >
-      <span>✨ عايز تعيش التجربة؟</span>
-      <a
-        href="https://love2-eight-eta.vercel.app/gift/ahmed"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-extrabold text-brand-blue underline decoration-brand-blue/40 underline-offset-4 transition-colors hover:text-brand-deep"
-      >
-        اضغط هنا وشوف مثال حي للهدية
-      </a>
-      <span className="text-xs font-bold text-ink/65">(كلمة السر: 123)</span>
-    </p>
-  );
-}
-
 function scrollToForm() {
   document.getElementById("order-form")?.scrollIntoView({ behavior: "smooth" });
 }
@@ -208,7 +189,6 @@ function Landing() {
             موقع معمول مخصوص ليكم، بيجمع صوركم ورسايلكم وأغنيتكم وذكرياتكم كلها في مكان واحد. عشان
             الشخص اللي بتحبه يحس إنك فاكر كل تفصيلة بينكم، وإن الهدية دي معمولة له هو بالذات.
           </p>
-          <LiveDemoPrompt className="mt-4" />
           <button onClick={scrollToForm} className="btn-primary glow-cta mt-7 w-full sm:w-auto">
             اطلب هديتك دلوقتي – <del className="mx-1 opacity-70">599ج</del> 250ج
           </button>
@@ -231,6 +211,41 @@ function Landing() {
             />
           </div>
         </div>
+      </section>
+
+      {/* ---------- QUICK VISUAL SHOWCASE ---------- */}
+      <section aria-label="معاينة سريعة لموقع الهدية" className="mx-auto w-full max-w-[460px] px-5 pb-12">
+        <div className="surface-card overflow-hidden rounded-[2rem] border border-white/80 bg-white/75 p-2 shadow-[var(--shadow-lift)] sm:p-3">
+          {/* Add your GIF at public/uploads/gift-showcase.gif. */}
+          <img
+            src="/uploads/gift-showcase.gif"
+            alt="معاينة متحركة لصفحات موقع الهدية ولوحة التحكم"
+            loading="lazy"
+            decoding="async"
+            fetchPriority="low"
+            width={360}
+            height={640}
+            draggable={false}
+            className="pointer-events-none block aspect-[9/16] h-auto w-full select-none rounded-[1.5rem] object-cover"
+          />
+        </div>
+      </section>
+
+      {/* ---------- ORDER FORM ---------- */}
+      <section
+        id="order-form"
+        ref={formSectionRef}
+        className="mx-auto w-full max-w-[720px] scroll-mt-6 px-5 py-12"
+      >
+        <div className="reveal text-center">
+          <h2 className="text-2xl font-extrabold text-ink sm:text-3xl">
+            جاهز تفرّح حبيبك؟ املا بياناتك دلوقتي 🎁
+          </h2>
+          <p className="mt-3 text-ink/70">
+            خطوة واحدة بس وتبدأ رحلة هديتك. السعر <del className="mx-1">599ج</del> 250ج بس.
+          </p>
+        </div>
+        <OrderForm />
       </section>
 
       {/* ---------- FEATURES ---------- */}
@@ -369,26 +384,6 @@ function Landing() {
             </article>
           ))}
         </div>
-      </section>
-
-      {/* ---------- ORDER FORM ---------- */}
-      <section
-        id="order-form"
-        ref={formSectionRef}
-        className="mx-auto w-full max-w-[720px] scroll-mt-6 px-5 py-16"
-      >
-        <div className="reveal text-center">
-          <h2 className="text-2xl font-extrabold text-ink sm:text-3xl">
-            جاهز تفرّح حبيبك؟ املا بياناتك دلوقتي 🎁
-          </h2>
-          <p className="mt-3 text-ink/70">
-            خطوة واحدة بس وتبدأ رحلة هديتك. السعر <del className="mx-1">599ج</del> 250ج بس.
-          </p>
-        </div>
-        <div className="reveal mt-5 text-center">
-          <LiveDemoPrompt />
-        </div>
-        <OrderForm />
       </section>
 
       {/* ---------- FOOTER ---------- */}
